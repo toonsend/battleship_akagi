@@ -34,8 +34,11 @@ def hunt_points
   end
 end
 
-def hunt_ship(result)
+def hunt_ship(result, hit)
   puts "hunting"
+  if result['status'] != 'hit and destroyed'
+    hunt_ship(result, hit)
+  end
 end
 
 def attack
