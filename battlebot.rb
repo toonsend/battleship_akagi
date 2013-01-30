@@ -11,8 +11,10 @@ config    = YAML.load_file('team_config.yml')
 @api_key  = config['api_key']
 @test     = true
 @map_size = 9
+@missiles = []
 
 def fire(x,y)
+  @missiles << [x,y]
   response = HTTParty.post("http://#{@host}/teams/#{@team_id}/game", :query => {'move' => [x,y], 'test' => @test}, :headers => {"HTTP-MIDWAY-API-KEY" => @api_key})
   result = JSON.parse(response.body)
 end
@@ -35,21 +37,66 @@ def hunt_points
 end
 
 def hunt_ship(result, hit)
-  puts "hunting"
-  if result['status'] != 'hit and destroyed'
-    hunt_ship(result, hit)
+  if result['game_status'] == 'completed'
+    print_result(result)
+    puts result
+    exit
+  end
+  return result if result['status'] == 'hit and destroyed'
+  map = result["grid"]
+  hunting = true
+  hitx, hity = hit
+  while(hunting)
+    hitx -= 1
+    hunting = check_square(hitx, hity, hit, map)
+  end
+
+  hunting = true
+  hitx, hity = hit
+  while(hunting)
+    hitx += 1
+    hunting = check_square(hitx, hity, hit, map)
+  end
+
+  hunting = true
+  hitx, hity = hit
+  while(hunting)
+    hity -= 1
+    hunting = check_square(hitx, hity, hit, map)
+  end
+
+  hunting = true
+  hitx, hity = hit
+  while(hunting)
+    hity += 1
+    hunting = check_square(hitx, hity, hit, map)
+  end
+end
+
+def check_square(hitx, hity, hit, map)
+  if (hitx < 0 || hitx > 9)
+    return false
+  elsif (hity < 0 || hity > 9)
+    return false
+  elsif map[hitx][hity] == 'o'
+    hunt_ship(fire(hitx, hity), hit)
+  elsif map[hitx][hity] == 'x'
+    return true
+  elsif map[hitx][hity] == 'm'
+    return false
   end
 end
 
 def attack
   hunt_points.each do |x,y|
+    next if @missiles.include?([x,y])
     result = fire(x,y)
     print_result(result)
-    hunt_ship(result) if result['status'] == 'hit'
+    if result['status'] == 'hit'
+      hunt_ship(result, result['move'])
+    end
     return result if result["game_status"] == 'completed'
   end
-rescue Exception => e
-  puts e.message
 end
 
 def complete_game
