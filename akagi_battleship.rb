@@ -75,23 +75,35 @@ class AkagiBattleship
   end
 
   def shoot_until_miss(hit, xoffset, yoffset, direction)
-
-    return if @result['status'] == 'hit and destroyed'
-
     x,y = hit
-    x = x + xoffset
-    y = y + yoffset
+    x += xoffset
+    y += yoffset
 
+    puts x.to_s + "|" + y.to_s
     if (x > MAP_WIDTH || y > MAP_WIDTH) || (x < 0 || y < 0)
       direction += 1
-      xoffset = 0
-      yoffset = 0
+      xoffset, yoffset = direction_offset(direction)
+      shoot_until_miss(hit, xoffset, yoffset, direction)
     elsif @map[x][y] != 'o'
       direction += 1
-      xoffset = 0
-      yoffset = 0
+      xoffset, yoffset = direction_offset(direction)
+      shoot_until_miss(hit, xoffset, yoffset, direction)
+    else
+      fire(x,y)
+      return if @result['status'] == 'hit and destroyed'
+      if @result['status'] == 'miss'
+        direction += 1
+        xoffset, yoffset = direction_offset(direction)
+        shoot_until_miss(hit, xoffset, yoffset, direction)
+      else
+        shoot_until_miss(hit, xoffset, yoffset, direction)
+      end
     end
+  end
 
+  def direction_offset(direction)
+    xoffset = 0
+    yoffset = 0
     case direction
     when 1
       xoffset -= 1
@@ -101,10 +113,10 @@ class AkagiBattleship
       yoffset -= 1
     when 4
       yoffset += 1
+    else
+      raise 'fuck'
     end
-    fire(x,y)
-    shoot_until_miss(hit, xoffset, yoffset, 1)
+    [xoffset, yoffset]
   end
+
 end
-    # if @result['status'] == 'hit and destroyed'
-    #   return
