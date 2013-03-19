@@ -1,6 +1,7 @@
 require 'httparty'
 require 'json'
 require 'yaml'
+require 'debugger'
 
 class AkagiBattleship
 
@@ -18,8 +19,9 @@ class AkagiBattleship
   def print_result
     system('clear')
     puts "#{@result['move']} : #{@result['status']}"
-    @result['grid'].each do |grid_line|
-      puts grid_line.gsub(/x/,'X')
+    puts ' 0123456789'
+    @result['grid'].each_with_index do |grid_line, index|
+      puts "#{index}#{grid_line.gsub(/x/,'X')}"
     end
     puts @result
   end
@@ -41,7 +43,6 @@ class AkagiBattleship
   end
 
   def fire(x,y)
-    sleep 2
     raise "Repeat Hit" if @missiles.include?([x,y])
     response = http_post(x,y)
     @result = JSON.parse(response.body)
@@ -96,14 +97,13 @@ class AkagiBattleship
         xoffset, yoffset = direction_offset(direction)
         shoot_until_miss(hit, xoffset, yoffset, direction)
       else
+        xoffset, yoffset = direction_offset(xoffset, yoffset)
         shoot_until_miss(hit, xoffset, yoffset, direction)
       end
     end
   end
 
-  def direction_offset(direction)
-    xoffset = 0
-    yoffset = 0
+  def direction_offset(direction, xoffset = 0, yoffset = 0)
     case direction
     when 1
       xoffset -= 1
